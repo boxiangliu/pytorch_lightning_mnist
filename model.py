@@ -45,7 +45,7 @@ from torch.utils.data import DataLoader, random_split
 import os
 
 
-class MNISTDataModule(pl.LigntningDataModule):
+class MNISTDataModule(pl.LightningDataModule):
 
     def __init__(self, batch_size=64):
         super().__init__()
