@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from pytorch_lightning as pl
+import pytorch_lightning as pl
 from torch.optim import Adam
 
 
