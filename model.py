@@ -6,7 +6,6 @@ from torch.optim import Adam
 
 
 class LitMNIST(pl.LightningModule):
-
     def __init__(self):
         super().__init__()
 
@@ -33,11 +32,18 @@ class LitMNIST(pl.LightningModule):
         x, y = batch
         log_prob = self(x)
         loss = F.nll_loss(log_prob, y)
-        self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("train_loss", loss, on_step=True)
         return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        log_prob = self(x)
+        loss = F.nll_loss(log_prob, y)
+        self.log("dev_loss", loss)
 
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=1e-3)
+
 
 from torchvision.datasets import MNIST
 from torchvision import datasets, transforms
@@ -46,7 +52,6 @@ import os
 
 
 class MNISTDataModule(pl.LightningDataModule):
-
     def __init__(self, batch_size=64):
         super().__init__()
         self.batch_size = batch_size
@@ -59,8 +64,12 @@ class MNISTDataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         transform = transforms.Compose([transforms.ToTensor()])
-        mnist_train = MNIST(os.getcwd(), train=True, download=False, transform=transform)
-        mnist_test = MNIST(os.getcwd(), train=False, download=False, transform=transform)
+        mnist_train = MNIST(
+            os.getcwd(), train=True, download=False, transform=transform
+        )
+        mnist_test = MNIST(
+            os.getcwd(), train=False, download=False, transform=transform
+        )
 
         mnist_train, mnist_val = random_split(mnist_train, [55000, 5000])
 
@@ -79,8 +88,16 @@ class MNISTDataModule(pl.LightningDataModule):
 
 
 from pytorch_lightning import Trainer
+from pytorch_lightning.loggers import WandbLogger
+
 dm = MNISTDataModule()
 model = LitMNIST()
-trainer = Trainer(gpus=8, strategy="ddp")
+wandb_logger = WandbLogger()
+trainer = Trainer(
+    gpus=8,
+    strategy="ddp",
+    logger=wandb_logger,
+    log_every_n_steps=10,
+    flush_logs_every_n_steps=10,
+)
 trainer.fit(model, dm)
-
